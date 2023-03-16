@@ -1,0 +1,54 @@
+{
+    "death_zone_y": -10,
+    "maps": 
+    [
+        {
+            "name": "tutorial",
+            "index": 0,
+            "startPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "clearPosition": {
+                "x": 0.0,
+                "y": 0.85,
+                "z": 15.0
+            },
+            "clearBoundary": {
+                "x": 1.05,
+                "y": 1.0,
+                "z": 1.8
+            }
+        },
+        {
+            "name": "main_map_1",
+            "index": 1,
+            "startPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "clearPosition": {
+                "x": 0.0,
+                "y": -2.2,
+                "z": 26.0
+            },
+            "clearBoundary": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            }
+        }
+    ]
+}

@@ -1,3 +1,4 @@
+#pragma once
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 
 #include <iostream>
@@ -21,26 +22,33 @@ using std::uniform_int_distribution;
 #include <string>
 #include <stdexcept>
 
+#include <fstream>
+
 #pragma comment(lib, "ws2_32.lib")
 
 #include "rapidjson/document.h"
 #include "rapidjson/writer.h"
 #include "rapidjson/stringbuffer.h"
+#include "Vector3.h"
+#include "PlayerData.h"
+#include "MapData.h"
 
-#define SERVER_PORT 9999
+#define SERVER_PORT 48080
 #define BUF_SIZE 4096
 #define QUEUE_SIZE 10
-#define IP_ADDRESS "127.0.0.1"
+#define IP_ADDRESS "172.30.1.49"
 
 std::queue<SOCKET> ClientSocketQueue;
 
 DWORD ThreadID[5];
 int count = 0;
 
-int getCurrentTimeInMilliSeconds();
+void ReadMapData();
+int GetCurrentTimeInMilliSeconds();
+bool CheckBoundary1D(float playerPosition, float targetPosition, float targetBoundary);
+bool CheckBoundary3D(Vector3 playerPosition, const Vector3 targetPosition, const Vector3 targetBoundary);
 
 DWORD WINAPI PlayServer(LPVOID);
 std::vector<std::string> split(std::string str, char Delimiter);
 
-// TODO : 이런 규칙 데이터는 json 같이 따로 관리하기 (임시방편)
-const int limitY = -10;
+MapData *mapData;

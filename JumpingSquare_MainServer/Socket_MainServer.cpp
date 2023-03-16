@@ -1,8 +1,4 @@
 #include "Socket_MainServer.h"
-#include "rapidjson/document.h"
-#include "rapidjson/writer.h"
-#include "rapidjson/stringbuffer.h"
-#include "PlayerData.h"
 
 
 int main()
@@ -44,6 +40,8 @@ int main()
 
 	listen(ListenSocket, 5);
 
+	ReadMapData();
+
 	while (true)
 	{
 		cout << "Waiting for client..." << endl;
@@ -52,17 +50,17 @@ int main()
 		cout << "Connection established. New socket num is " << ClientSocket << endl;
 
 		// 老窜篮 贸澜 立加父 货肺款 规 俺汲肺 贸府窃.
-		if (count == 0)
-		{
-			DWORD dwThreadID;
-			HANDLE hThread = CreateThread(NULL, 0, PlayServer, (LPVOID)ClientSocket, 0, &dwThreadID);
-		}
-		else
-		{
-			ClientSocketQueue.push(ClientSocket);
-		}
-		count++;
-		cout << "[Connect] Connected Clients: " << count << endl;
+if (count == 0)
+{
+	DWORD dwThreadID;
+	HANDLE hThread = CreateThread(NULL, 0, PlayServer, (LPVOID)ClientSocket, 0, &dwThreadID);
+}
+else
+{
+	ClientSocketQueue.push(ClientSocket);
+}
+count++;
+cout << "[Connect] Connected Clients: " << count << endl;
 	}
 
 	closesocket(ListenSocket);
@@ -71,9 +69,44 @@ int main()
 	return 0;
 }
 
-int getCurrentTimeInMilliSeconds()
+void ReadMapData()
+{
+	std::ifstream fIn("data/map_data.json");
+	std::string str;
+	if (fIn.is_open()) 
+	{
+		rapidjson::Document doc;
+		fIn >> str;
+		doc.Parse(const_cast<char*>(str.c_str()));
+
+		mapData = new MapData(doc);
+
+		fIn.close();
+	}
+}
+
+int GetCurrentTimeInMilliSeconds()
 {
 	return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+}
+
+bool CheckBoundary1D(float playerPosition, float targetPosition, float targetBoundary)
+{
+	if (targetPosition - targetBoundary <= playerPosition && playerPosition <= targetPosition + targetBoundary)
+		return true;
+	
+	return false;
+}
+
+
+bool CheckBoundary3D(Vector3 playerPosition, const Vector3 targetPosition, const Vector3 targetBoundary)
+{
+	if (CheckBoundary1D(playerPosition.x, targetPosition.x, targetBoundary.x) &&
+		CheckBoundary1D(playerPosition.y, targetPosition.y, targetBoundary.y) &&
+		CheckBoundary1D(playerPosition.z, targetPosition.z, targetBoundary.z))
+		return true;
+	
+	return false;
 }
 
 DWORD WINAPI PlayServer(LPVOID pvParam)
@@ -131,20 +164,29 @@ DWORD WINAPI PlayServer(LPVOID pvParam)
 
 			std::string message = std::string(newDocument["message"].GetString());
 			cout << "[Message] " << message << endl;
-			
-			if (player.GetPosition().y < limitY && player.IsAlive())
+
+			if (player.GetPosition().y < mapData->GetLimitY() && player.IsAlive())
 			{
 				// TODO : 皋矫瘤 葛澜 沥府
 				newDocument["message"] = "Death";
 			}
 			if (message.compare("RequestRespawn") == 0)
 			{
-				// TODO : 府胶迄 贸府
+				// 府胶迄 贸府
 				newDocument["message"] = "RespawnAccepted";
 				Vector3 respawnPos = player.Respawn();
 				newDocument["positionX"] = respawnPos.x;
 				newDocument["positionY"] = respawnPos.y;
 				newDocument["positionZ"] = respawnPos.z;
+			}
+
+			int map = newDocument["map"].GetInt();
+			Vector3 clearPosition = mapData->GetMap(map).GetClearPosition();
+			Vector3 clearBoundary = mapData->GetMap(map).GetClearBoundary();
+			if (CheckBoundary3D(player.GetPosition(), clearPosition, clearBoundary))
+			{
+				// 努府绢 贸府
+				newDocument["message"] = "StageClear";
 			}
 
 			arrayVal.PushBack(newDocument, allocator);

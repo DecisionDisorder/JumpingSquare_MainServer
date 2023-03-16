@@ -1,3 +1,5 @@
+#pragma once
+
 struct Vector3
 {
 public:
