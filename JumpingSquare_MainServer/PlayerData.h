@@ -21,6 +21,7 @@ private:
 public:
 	PlayerData(rapidjson::Document& document);
 
+	inline std::string GetPlayerName() { return name; }
 	inline Vector3 GetPosition() { return position; }
 	inline bool IsAlive() { return alive; }
 

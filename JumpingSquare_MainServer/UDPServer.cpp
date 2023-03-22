@@ -9,6 +9,7 @@ DWORD WINAPI DataThreadUDP(LPVOID v)
 	int n = 0;
 	bool connected = true;
 
+	stdext::hash_map<std::string, PlayerData> playerDataHash;
 	SOCKADDR_IN clientSocketAddr;
 	int clientSocketAddrSize;
 
@@ -44,12 +45,25 @@ DWORD WINAPI DataThreadUDP(LPVOID v)
 			newDocument.Parse(jsons[jsons.size() - 1].c_str());
 
 			PlayerData player(newDocument);
-			playerDataList.push_back(player);
+			std::hash_map<std::string, PlayerData>::iterator findIter = playerDataHash.find(player.GetPlayerName());
+			if (findIter == playerDataHash.end())
+			{
+				playerDataHash.insert(
+					std::hash_map<std::string, PlayerData>::value_type(player.GetPlayerName(), player));
+			}
+			else
+			{
+				// TODO: 이게 정상작동하는지 확인 필요
+				// 최신 데이터로 플레이어 업데이트
+				findIter->second = player;
+			}
 
 			if (player.GetPosition().y < mapData->GetLimitY() && player.IsAlive())
 			{
 				// 사망 처리
 				//newDocument["message"] = std::string(messageData->GetMessageContent(Message::Death));
+
+				messageQueue.push({ player.GetPlayerName(), messageData->GetMessageContent(Message::Death) });
 				// TODO : TCP 메시지 큐에 등록 (mutex lock?)
 			}
 
