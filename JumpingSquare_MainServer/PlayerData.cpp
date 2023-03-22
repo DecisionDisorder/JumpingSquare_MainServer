@@ -8,7 +8,6 @@ PlayerData::PlayerData(rapidjson::Document& document)
 	name = std::string(document["playerName"].GetString());
 	position = Vector3(document["positionX"].GetDouble(), document["positionY"].GetDouble(), document["positionZ"].GetDouble());
 	rotation = Vector3(document["rotationX"].GetDouble(), document["rotationY"].GetDouble(), document["rotationZ"].GetDouble());
-	velocity = Vector3(document["velocityX"].GetDouble(), document["velocityY"].GetDouble(), document["velocityZ"].GetDouble());
 	alive = document["alive"].GetBool();
 	respawnPosition = Vector3(0.f, 1.0f, 0.f);
 

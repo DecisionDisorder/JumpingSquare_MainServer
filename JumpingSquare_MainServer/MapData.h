@@ -6,6 +6,7 @@
 #include "rapidjson/stringbuffer.h"
 #include <string>
 #include <vector>
+#include <fstream>
 
 class Map
 {
@@ -37,4 +38,6 @@ public:
 
 	inline float GetLimitY() { return limitY; }
 	inline Map GetMap(int index) { return maps[index]; }
+
+	static MapData* ReadMapDataFromFile();
 };

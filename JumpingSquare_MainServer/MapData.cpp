@@ -22,3 +22,23 @@ MapData::MapData(rapidjson::Document &doc)
 		maps.push_back(map);
 	}
 }
+
+MapData* MapData::ReadMapDataFromFile()
+{
+	std::ifstream fIn("data/map_data.json");
+	std::string str;
+	MapData* mapData = nullptr;
+
+	if (fIn.is_open())
+	{
+		rapidjson::Document doc;
+		fIn >> str;
+		doc.Parse(const_cast<char*>(str.c_str()));
+
+		mapData = new MapData(doc);
+
+		fIn.close();
+	}
+
+	return mapData;
+}
