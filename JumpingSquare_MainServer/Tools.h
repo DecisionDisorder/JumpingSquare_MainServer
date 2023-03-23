@@ -15,4 +15,4 @@ std::vector<std::string> split(std::string str, char Delimiter);
 int GetCurrentTimeInMilliSeconds();
 bool CheckBoundary1D(float playerPosition, float targetPosition, float targetBoundary);
 bool CheckBoundary3D(Vector3 playerPosition, const Vector3 targetPosition, const Vector3 targetBoundary);
-const char* GetJsonString(rapidjson::Document& doc, int& size);
+std::string GetJsonString(rapidjson::Document& doc, int& size);

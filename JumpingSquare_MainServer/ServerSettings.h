@@ -9,7 +9,6 @@
 #include "Message.h"
 #include "MapData.h"
 
-int connectedClientCount = 0;
-
-MapData* mapData;
-Message* messageData;
+extern int connectedClientCount;
+extern MapData* mapData;
+extern Message* messageData;

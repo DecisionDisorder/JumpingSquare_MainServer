@@ -8,14 +8,15 @@
 class ResponsiveMessage
 {
 private:
-	const char* request;
-	const char* accept;
+	std::string request;
+	std::string accept;
 
 public:
-	ResponsiveMessage(const char* request, const char* accept) : request(request), accept(accept) {}
+	ResponsiveMessage();
+	ResponsiveMessage(std::string request, std::string accept);
 
-	inline const char* GetRequest() { return request; }
-	inline const char* GetAccept() { return accept; }
+	inline std::string GetRequest();
+	inline std::string GetAccept();
 };
 
 class Message
@@ -24,9 +25,9 @@ private:
 	ResponsiveMessage access;
 	ResponsiveMessage respawn;
 
-	const char* close;
-	const char* death;
-	const char* clear;
+	std::string close;
+	std::string death;
+	std::string clear;
 
 public:
 	Message(rapidjson::Document& document);
@@ -34,5 +35,5 @@ public:
 	static Message* ReadDataFromFile();
 
 	enum MessageType { AccessRequest, AccessAccept, RespawnRequest, RespawnAccept, Close, Death, Clear };
-	const char* GetMessageContent(MessageType type);
+	std::string GetMessageContent(MessageType type);
 };

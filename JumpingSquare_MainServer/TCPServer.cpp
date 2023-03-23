@@ -1,14 +1,45 @@
 #include "TCPServer.h"
 
+std::queue<SOCKET> clientSocketQueue;
+std::mutex socketMutex;
 
-void AccessComplete(SOCKET client, stdext::hash_map<std::string, SOCKET>& clientSockets)
+/// <summary>
+/// UDP에서 검증 후 등록한 메시지.
+/// first: PlayerName
+/// second: message
+/// </summary>
+std::queue<std::pair<std::string, std::string>> toTcpMessageQueue;
+std::mutex tcpMessageMutex;
+
+
+std::string CreateTcpMessage(std::string playerName, std::string message, int& bufSize)
 {
-	const char* message = messageData->GetMessageContent(Message::AccessAccept);
-	send(client, message, strlen(message), 0);
-	cout << "Access completed message sended." << endl;
+	// TCP 메시지 생성
+	rapidjson::Document doc;
+	doc.SetObject();
+	doc.AddMember("playerName", playerName, doc.GetAllocator());
+	doc.AddMember("message", message, doc.GetAllocator());
+	std::string json = GetJsonString(doc, bufSize);
+	return json;
+}
+
+void AccessComplete(SOCKET& client, std::unordered_map<std::string, SOCKET>& clientSockets)
+{
+	std::string message = messageData->GetMessageContent(Message::AccessAccept);
+	int bufSize = 0;
+	std::string msg = CreateTcpMessage("HANDSHAKING", message, bufSize);
+	int s = send(client, msg.c_str(), bufSize, 0);
+	cout << "Access completed message sended." << "(" << s << ")" << endl;
 	
-	char* name;
+	char name[BUF_SIZE];
 	int n = recv(client, name, BUF_SIZE, 0);
+	
+	if (n == SOCKET_ERROR)
+	{
+		cout << "TCP Socket Error " << WSAGetLastError() << endl;
+		return;
+	}
+
 	if (n < BUF_SIZE)
 		name[n] = 0;
 
@@ -16,13 +47,13 @@ void AccessComplete(SOCKET client, stdext::hash_map<std::string, SOCKET>& client
 	rapidjson::Document nameDoc;
 	nameDoc.Parse(jsons[jsons.size() - 1].c_str());
 	std::string playerName = nameDoc["playerName"].GetString();
-	clientSockets.insert(stdext::hash_map<std::string, SOCKET>::value_type(playerName, client));
+	clientSockets.insert(make_pair(playerName, client));
 }
 
-DWORD WINAPI MessageThreadTCP(LPVOID v)
+void MessageThreadTCP()
 {
 	DWORD dwResult = 0;
-	stdext::hash_map<std::string, SOCKET> clientSockets;
+	std::unordered_map<std::string, SOCKET> clientSockets;
 	char buf[BUF_SIZE];
 	//std::vector<SOCKET> clientSockets;
 	SOCKET firstSocket = clientSocketQueue.front();
@@ -32,57 +63,71 @@ DWORD WINAPI MessageThreadTCP(LPVOID v)
 	bool connected = true;
 	int clientLength = sizeof(firstSocket);
 
+	//DWORD dwThreadID;
+	//HANDLE hThread = CreateThread(NULL, 0, DataThreadUDP, nullptr, 0, &dwThreadID);
+	std::thread udpThread(DataThreadUDP);
+
 	AccessComplete(firstSocket, clientSockets);
 
 	while (connected)
 	{
 		u_long nonBlockingMode = 1;
 		//cout << endl;
+		// 신규 접속 플레이어 확인
 		while (!clientSocketQueue.empty())
 		{
+			// 클라이언트 소켓 큐 확인 (mutex lock)
+			socketMutex.lock();
 			SOCKET client = clientSocketQueue.front();
-			AccessComplete(client, clientSockets);
-			ioctlsocket(client, FIONBIO, &nonBlockingMode); // non-blocking으로 했을 때 recv로는 결과가 안나올 수 있는거 찾아봐야됨
 			clientSocketQueue.pop();
+			socketMutex.unlock();
+
+			AccessComplete(client, clientSockets);
+			//ioctlsocket(client, FIONBIO, &nonBlockingMode); // non-blocking으로 했을 때 recv로는 결과가 안나올 수 있는거 찾아봐야됨
 		}
 
 		// 모든 메시지 큐 확인
-		while (!messageQueue.empty())
+		while (!toTcpMessageQueue.empty())
 		{
 			// TCP 메시지 큐 확인
-			std::string playerName = messageQueue.front().first;
-			std::string message = messageQueue.front().second;
-			messageQueue.pop();
+			tcpMessageMutex.lock();
+			std::string playerName = toTcpMessageQueue.front().first;
+			std::string message = toTcpMessageQueue.front().second;
+			toTcpMessageQueue.pop();
+			tcpMessageMutex.unlock();
 
 			// playerName으로 소켓 해시 값 찾기
-			SOCKET sock = clientSockets.find(playerName);
-
-			// TCP 메시지 생성
-			rapidjson::Document doc;
-			doc.AddMember("playerName", playerName, doc.GetAllocator());
-			doc.AddMember("message", message, doc.GetAllocator());
-			doc.AddMember("alive", true, doc.GetAllocator()); // 나중에 메시지에 따라 alive 처리 혹은 player data에서 불러오기
-			int bufSize;
-			const char* json = GetJsonString(doc, bufSize);
-			send(sock, json, bufSize, 0);
+			SOCKET sock = clientSockets.find(playerName)->second;
+			if (sock != clientSockets.end()->second)
+			{
+				int bufSize = 0;
+				const char* json = CreateTcpMessage(playerName, message, bufSize).c_str();
+				send(sock, json, bufSize, 0);
+			}
 		}
 
-		stdext::hash_map<std::string, SOCKET>::iterator iter;
+		std::unordered_map<std::string, SOCKET>::iterator iter;
 		for (iter = clientSockets.begin(); iter != clientSockets.end(); ++iter)
 		{
 
 			rapidjson::Document newDocument;
 			SOCKET client = iter->second;
 			n = recv(client, buf, BUF_SIZE, 0); // TODO : nonblocking 대응
-			if (n < 0)
+			if (n == 0)
 			{
 				cout << "[TCP]Close Requested" << endl;
-				clientSockets.erase(clientSockets.begin() + i);
+				clientSockets.erase(iter);
 				connectedClientCount--;
 				cout << "[Disconnect] Connected Clients: " << connectedClientCount << endl;
-
 				if (connectedClientCount == 0)
+				{
+					std::string closeMsg = messageData->GetMessageContent(Message::Close);
+					udpMessageMutex.lock();
+					toUdpMessageHash.insert(std::make_pair("SYSTEM", closeMsg));
+					udpMessageMutex.unlock();
+
 					break;
+				}
 
 				continue;
 			}
@@ -100,6 +145,7 @@ DWORD WINAPI MessageThreadTCP(LPVOID v)
 			newDocument.Parse(jsons[jsons.size() - 1].c_str());
 
 			std::string message = std::string(newDocument["message"].GetString());
+			std::string playerName = std::string(newDocument["playerName"].GetString());
 			cout << "[Message] " << message << endl;
 
 			if (message.compare(messageData->GetMessageContent(Message::Close)) == 0)
@@ -107,31 +153,36 @@ DWORD WINAPI MessageThreadTCP(LPVOID v)
 				//UDP에서 제거해야되면 UDP 데이터큐에 등록?
 				continue;
 			}
-			// TODO: 플레이어를 UDP 데이터에서 읽어와야 됨
-			if (player.GetPosition().y < mapData->GetLimitY() && player.IsAlive())
-			{
-				// 사망 처리
-				newDocument["message"] = std::string(messageData->GetMessageContent(Message::Death));
-			}
 			if (message.compare(messageData->GetMessageContent(Message::RespawnRequest)) == 0)
 			{
 				// 리스폰 처리
-				newDocument["message"] = std::string(messageData->GetMessageContent(Message::RespawnAccept));
-				// TODO: 플레이어 리스폰 위치 UDP 에서 읽어와야 됨
-				Vector3 respawnPos = player.Respawn();
+				std::string respawnMsg = std::string(messageData->GetMessageContent(Message::RespawnAccept));
+				newDocument["message"].SetString(respawnMsg.data(), respawnMsg.size(), newDocument.GetAllocator());
+				// UDP에 리스폰 요청 (mutex lock)
+				MutexLockHelper lock(&udpMessageMutex);
+				toUdpMessageHash.insert(
+					std::make_pair(
+						playerName, 
+						messageData->GetMessageContent(Message::RespawnRequest)
+					)
+				);
+				// 블록이 끝나면서 mutex가 unlock
 			}
 
 			int bufSize;
-			const char* assembledJson = GetJsonString(newDocument, bufSize);
+			const char* assembledJson = GetJsonString(newDocument, bufSize).c_str();
 			send(client, assembledJson, bufSize, 0);
 			//cout << "[buf] " << buf << endl;
 		}
+
+		if (connectedClientCount == 0)
+			break;
 
 		cout << "Message Checked" << endl;
 		Sleep(100);
 	}
 
-	cout << "[Disconnect] All clients disconnected." << endl;
+	cout << "[TCP Disconnect] All clients disconnected." << endl;
 
-	return (dwResult);
+	udpThread.join();
 }

@@ -1,0 +1,14 @@
+{
+    "access": {
+        "request": "Access",
+        "accept": "AccessCompleted"
+    },
+    "respawn": {
+        "request": "RequestRespawn",
+        "accept": "RespawnAccepted"
+    },
+    "close": "Close",
+    "death": "Death",
+    "clear": "StageClear",
+    "update": "UpdatePosition"
+}

@@ -1,19 +1,20 @@
 #include "Message.h"
 #include "Message.h"
 
-Message::Message(rapidjson::Document& document) :
-	access(ResponsiveMessage(document["access"]["request"].GetString(), document["access"]["accept"].GetString())),
-	respawn(ResponsiveMessage(document["respawn"]["request"].GetString(), document["respawn"]["accept"].GetString())),
-	close(document["close"].GetString()),
-	death(document["death"].GetString()),
-	clear(document["clear"].GetString())
-{}
+Message::Message(rapidjson::Document& document)
+{
+	access = ResponsiveMessage(document["access"]["request"].GetString(), document["access"]["accept"].GetString());
+	respawn = ResponsiveMessage(document["respawn"]["request"].GetString(), document["respawn"]["accept"].GetString());
+	close = document["close"].GetString();
+	death = document["death"].GetString();
+	clear = document["clear"].GetString();
+}
 
 Message* Message::ReadDataFromFile()
 {
 	std::ifstream fIn("data/message.json");
 	std::string str;
-	Message* messageData = nullptr;
+	Message* loadedMessageData = nullptr;
 
 	if (fIn.is_open())
 	{
@@ -21,15 +22,15 @@ Message* Message::ReadDataFromFile()
 		fIn >> str;
 		doc.Parse(const_cast<char*>(str.c_str()));
 
-		messageData = new Message(doc);
+		loadedMessageData = new Message(doc);
 
 		fIn.close();
 	}
 
-	return messageData;
+	return loadedMessageData;
 }
 
-const char* Message::GetMessageContent(MessageType type)
+std::string Message::GetMessageContent(MessageType type)
 {
 	switch (type)
 	{
@@ -51,4 +52,17 @@ const char* Message::GetMessageContent(MessageType type)
 		break;
 	}
 	return "Null";
+}
+
+ResponsiveMessage::ResponsiveMessage() {}
+ResponsiveMessage::ResponsiveMessage(std::string request, std::string accept) : request(request), accept(accept) {}
+
+inline std::string ResponsiveMessage::GetRequest()
+{
+	return request;
+}
+
+inline std::string ResponsiveMessage::GetAccept()
+{
+	return accept;
 }

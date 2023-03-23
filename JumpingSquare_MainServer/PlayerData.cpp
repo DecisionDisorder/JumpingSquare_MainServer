@@ -18,6 +18,11 @@ void PlayerData::SetPosition(Vector3 position)
 	this->position = position;
 }
 
+void PlayerData::SetRotation(Vector3 rot)
+{
+	this->rotation = rot;
+}
+
 Vector3 PlayerData::Respawn()
 {
 	SetPosition(respawnPosition);

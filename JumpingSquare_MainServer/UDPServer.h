@@ -8,14 +8,22 @@ using std::endl;
 #include <WS2tcpip.h>
 #include <windows.h>
 
-#include <hash_map>
-#include <queue>
+#pragma comment(lib, "ws2_32.lib")
 
+#include <unordered_map>
+#include <queue>
+#include <mutex>
+
+#include "MutexLock.h"
 #include "ServerSettings.h"
 #include "PlayerData.h"
 #include "TCPServer.h"
 
-SOCKET udpSocket;
+extern SOCKET udpSocket;
 
-std::queue<PlayerData> dataQueue;
-DWORD WINAPI DataThreadUDP(LPVOID);
+extern std::unordered_map<std::string, std::string> toUdpMessageHash;
+extern std::mutex udpMessageMutex;
+
+
+bool CheckClose();
+void DataThreadUDP();

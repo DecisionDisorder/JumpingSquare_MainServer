@@ -5,7 +5,8 @@ int main()
 {
 	WORD		wVersionRequested;		// 
 	WSADATA		wsaData;				// Windows에서 소켓 초기화 정보를 저장하기 위한 구조체
-	SOCKADDR_IN tcpSocketAddr;	
+	SOCKADDR_IN tcpSocketAddr;
+	SOCKADDR_IN clientAddr;				
 	SOCKADDR_IN udpSocketAddr;
 	int			err;
 	int			byteSent;
@@ -23,8 +24,8 @@ int main()
 
 	// TCP 소켓 ip:port 정보 설정
 	tcpSocketAddr.sin_family = AF_INET;							// Address Family Internet
-	tcpSocketAddr.sin_port = htons(TCP_PORT);					// 수신할 Port #
-	tcpSocketAddr.sin_addr.S_un.S_addr = inet_addr(IP_ADDRESS);	// 타켓 IP
+	tcpSocketAddr.sin_port = htons(TCP_PORT);			// 수신할 Port #
+	tcpSocketAddr.sin_addr.s_addr = inet_addr(IP_ADDRESS);	// 타켓 IP
 
 	SOCKET tcpListenSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP); // TCP 소켓 생성
 	if (tcpListenSocket == INVALID_SOCKET)
@@ -34,7 +35,7 @@ int main()
 		return 1;
 	}
 
-	int x = bind(tcpListenSocket, (sockaddr*)&tcpSocketAddr, sizeof(tcpSocketAddr));
+	int x = bind(tcpListenSocket, reinterpret_cast<SOCKADDR*>(&tcpSocketAddr), sizeof(tcpSocketAddr));
 	if (x == SOCKET_ERROR)
 	{
 		cout << "[TCP Port]Binding failed. Error code: " << WSAGetLastError() << endl;
@@ -68,30 +69,38 @@ int main()
 	mapData = MapData::ReadMapDataFromFile();
 	messageData = Message::ReadDataFromFile();
 
+	listen(tcpListenSocket, 5);
+	std::thread* tcpThread = nullptr;
+
 	while (true)
 	{
 		cout << "Waiting for client..." << endl;
 
-		int xx = sizeof(tcpSocketAddr);
-		SOCKET clientSocket = accept(tcpListenSocket, reinterpret_cast<SOCKADDR*>(&tcpSocketAddr), &xx);
+		int xx = sizeof(clientAddr);
+		SOCKET clientSocket = accept(tcpListenSocket, reinterpret_cast<SOCKADDR*>(&clientAddr), &xx);
 		cout << "Connection established. New socket num is " << clientSocket << endl;
 
 		// 일단은 처음 접속만 새로운 방 개설로 처리함.
 		if (connectedClientCount == 0)
 		{
-			DWORD dwThreadID;
-			HANDLE hThread = CreateThread(NULL, 0, MessageThreadTCP, nullptr, 0, &dwThreadID);
 			clientSocketQueue.push(clientSocket);
+			if(tcpThread == nullptr)
+				tcpThread = new std::thread(MessageThreadTCP);
 		}
 		else
 		{
+			// 소켓 추가에 대한 mutex lock
+			MutexLockHelper lock(&socketMutex);
 			clientSocketQueue.push(clientSocket);
+			// 블록을 벗어나면서 mutex unlock
 		}
 		connectedClientCount++;
 		cout << "[Connect] Connected Clients: " << connectedClientCount << endl;
 	}
 
+	delete tcpThread;
 	closesocket(tcpListenSocket);
+	closesocket(udpSocket);
 	WSACleanup();
 
 	return 0;

@@ -33,9 +33,6 @@
     <ClCompile Include="MapData.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="Socket_MainServer_TCP.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
     <ClCompile Include="Message.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
@@ -50,6 +47,18 @@
     </ClCompile>
     <ClCompile Include="ServerSettings.h">
       <Filter>헤더 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="MutexLock.h">
+      <Filter>헤더 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="MutexLock.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Uncopyable.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="ServerSettings.cpp">
+      <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -84,6 +93,9 @@
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="UDPServer.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Uncopyable.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>

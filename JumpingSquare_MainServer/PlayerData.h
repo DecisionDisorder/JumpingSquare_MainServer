@@ -11,17 +11,14 @@ private:
 	std::string name;
 	Vector3 position;
 	Vector3 rotation;
-	Vector3 velocity;
 	Vector3 respawnPosition;
 	bool alive;
-
-private:
-	void SetPosition(Vector3 position);
 
 public:
 	PlayerData(rapidjson::Document& document);
 
 	inline std::string GetPlayerName() { return name; }
+	inline Vector3 GetRotation() { return rotation; }
 	inline Vector3 GetPosition() { return position; }
 	inline bool IsAlive() { return alive; }
 
@@ -29,4 +26,7 @@ public:
 
 	void SetRespawnPosition(Vector3 newPosition);
 	inline Vector3 GetRespawnPosition() { return respawnPosition; }
+
+	void SetPosition(Vector3 pos);
+	void SetRotation(Vector3 rot);
 };

@@ -38,15 +38,14 @@ std::vector<std::string> split(std::string str, char Delimiter) {
 	return result;
 }
 
-const char* GetJsonString(rapidjson::Document& doc, int& size)
+std::string GetJsonString(rapidjson::Document& doc, int& size)
 {
 	rapidjson::StringBuffer buffer;
 	rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
 	doc.Accept(writer);
 	std::string msg = buffer.GetString();
 	msg.append("|");
-	const char* jsonString = msg.c_str();
 	size = buffer.GetSize();
 
-	return jsonString;
+	return msg;
 }

@@ -22,6 +22,7 @@ using std::uniform_int_distribution;
 
 #pragma comment(lib, "ws2_32.lib")
 
+#include "MutexLock.h"
 #include "ServerSettings.h"
 #include "Vector3.h"
 #include "PlayerData.h"
@@ -29,7 +30,5 @@ using std::uniform_int_distribution;
 #include "MapData.h"
 #include "Message.h"
 #include "TCPServer.h"
-
-
 
 DWORD ThreadID[5];

@@ -13,26 +13,30 @@ using std::endl;
 #include <queue>
 #include <vector>
 #include <string>
-#include <hash_map>
+#include <unordered_map>
+#include <mutex>
+#include <thread>
+
+#define RAPIDJSON_HAS_STDSTRING 1
 
 #include "rapidjson/document.h"
 #include "rapidjson/writer.h"
 #include "rapidjson/stringbuffer.h"
 
+#include "MutexLock.h"
 #include "ServerSettings.h"
 #include "PlayerData.h"
 #include "Tools.h"
 #include "Message.h"
 #include "UDPServer.h"
 
-std::queue<SOCKET> clientSocketQueue;
-/// <summary>
-/// UDP에서 검증 후 등록한 메시지.
-/// first: PlayerName
-/// second: message
-/// </summary>
-std::queue<std::pair<std::string, std::string>> messageQueue;
+extern std::queue<SOCKET> clientSocketQueue;
+extern std::mutex socketMutex;
 
-DWORD WINAPI MessageThreadTCP(LPVOID);
-void AccessComplete(SOCKET client, stdext::hash_map<std::string, SOCKET>& clientSockets);
+extern std::queue<std::pair<std::string, std::string>> toTcpMessageQueue;
+extern std::mutex tcpMessageMutex;
+
+std::string CreateTcpMessage(std::string playerName, std::string message, int& bufSize);
+void MessageThreadTCP();
+void AccessComplete(SOCKET& client, std::unordered_map<std::string, SOCKET>& clientSockets);
 
