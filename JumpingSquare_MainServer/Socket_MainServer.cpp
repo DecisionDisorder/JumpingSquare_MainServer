@@ -11,6 +11,10 @@ int main()
 	int			err;
 	int			byteSent;
 
+	std::ios::sync_with_stdio(false);
+	std::cin.tie(NULL);
+	std::cout.tie(NULL);
+
 	// Windows Socket API 버전 설정 및 초기화
 	wVersionRequested = MAKEWORD(1, 1);
 	err = WSAStartup(wVersionRequested, &wsaData);
@@ -27,6 +31,7 @@ int main()
 	tcpSocketAddr.sin_port = htons(TCP_PORT);			// 수신할 Port #
 	tcpSocketAddr.sin_addr.s_addr = inet_addr(IP_ADDRESS);	// 타켓 IP
 
+
 	SOCKET tcpListenSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP); // TCP 소켓 생성
 	if (tcpListenSocket == INVALID_SOCKET)
 	{
@@ -34,6 +39,10 @@ int main()
 		WSACleanup();
 		return 1;
 	}
+
+	u_long on = 1;
+	if (ioctlsocket(tcpListenSocket, FIONBIO, &on) == INVALID_SOCKET)
+		return 1;
 
 	int x = bind(tcpListenSocket, reinterpret_cast<SOCKADDR*>(&tcpSocketAddr), sizeof(tcpSocketAddr));
 	if (x == SOCKET_ERROR)
@@ -71,13 +80,28 @@ int main()
 
 	listen(tcpListenSocket, 5);
 	std::thread* tcpThread = nullptr;
+	bool nextWaiting = true;
 
 	while (true)
 	{
-		cout << "Waiting for client..." << endl;
+		if(nextWaiting)
+			cout << "Waiting for client..." << endl;
 
 		int xx = sizeof(clientAddr);
 		SOCKET clientSocket = accept(tcpListenSocket, reinterpret_cast<SOCKADDR*>(&clientAddr), &xx);
+
+		if (clientSocket == INVALID_SOCKET)
+		{
+			if (WSAGetLastError() == WSAEWOULDBLOCK)
+			{
+				nextWaiting = false;
+				continue;
+			}
+
+			cout << "[Listen InvalidSocket] " << WSAGetLastError() << endl;
+			break;
+		}
+
 		cout << "Connection established. New socket num is " << clientSocket << endl;
 
 		// 일단은 처음 접속만 새로운 방 개설로 처리함.
@@ -96,6 +120,7 @@ int main()
 		}
 		connectedClientCount++;
 		cout << "[Connect] Connected Clients: " << connectedClientCount << endl;
+		nextWaiting = true;
 	}
 
 	delete tcpThread;

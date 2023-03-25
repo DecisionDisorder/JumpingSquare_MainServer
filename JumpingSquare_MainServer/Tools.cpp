@@ -45,7 +45,7 @@ std::string GetJsonString(rapidjson::Document& doc, int& size)
 	doc.Accept(writer);
 	std::string msg = buffer.GetString();
 	msg.append("|");
-	size = buffer.GetSize();
+	size = buffer.GetSize() + 1;
 
 	return msg;
 }

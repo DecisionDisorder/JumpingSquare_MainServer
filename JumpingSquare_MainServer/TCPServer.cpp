@@ -29,14 +29,14 @@ void AccessComplete(SOCKET& client, std::unordered_map<std::string, SOCKET>& cli
 	int bufSize = 0;
 	std::string msg = CreateTcpMessage("HANDSHAKING", message, bufSize);
 	int s = send(client, msg.c_str(), bufSize, 0);
-	cout << "Access completed message sended." << "(" << s << ")" << endl;
+	cout << "[TCP]Access completed message sended." << "(" << s << ")" << endl;
 	
 	char name[BUF_SIZE];
 	int n = recv(client, name, BUF_SIZE, 0);
 	
 	if (n == SOCKET_ERROR)
 	{
-		cout << "TCP Socket Error " << WSAGetLastError() << endl;
+		cout << "[TCP]TCP Socket Error " << WSAGetLastError() << endl;
 		return;
 	}
 
@@ -70,9 +70,7 @@ void MessageThreadTCP()
 	AccessComplete(firstSocket, clientSockets);
 
 	while (connected)
-	{
-		u_long nonBlockingMode = 1;
-		//cout << endl;
+	{		
 		// 신규 접속 플레이어 확인
 		while (!clientSocketQueue.empty())
 		{
@@ -83,7 +81,6 @@ void MessageThreadTCP()
 			socketMutex.unlock();
 
 			AccessComplete(client, clientSockets);
-			//ioctlsocket(client, FIONBIO, &nonBlockingMode); // non-blocking으로 했을 때 recv로는 결과가 안나올 수 있는거 찾아봐야됨
 		}
 
 		// 모든 메시지 큐 확인
@@ -97,12 +94,13 @@ void MessageThreadTCP()
 			tcpMessageMutex.unlock();
 
 			// playerName으로 소켓 해시 값 찾기
-			SOCKET sock = clientSockets.find(playerName)->second;
-			if (sock != clientSockets.end()->second)
+			std::unordered_map<std::string, SOCKET>::iterator socketIter = clientSockets.find(playerName);
+			SOCKET sock = socketIter->second;
+			if (socketIter != clientSockets.end())
 			{
 				int bufSize = 0;
-				const char* json = CreateTcpMessage(playerName, message, bufSize).c_str();
-				send(sock, json, bufSize, 0);
+				std::string json = CreateTcpMessage(playerName, message, bufSize).c_str();
+				send(sock, json.c_str(), bufSize, 0);
 			}
 		}
 
@@ -113,12 +111,22 @@ void MessageThreadTCP()
 			rapidjson::Document newDocument;
 			SOCKET client = iter->second;
 			n = recv(client, buf, BUF_SIZE, 0); // TODO : nonblocking 대응
-			if (n == 0)
+			if (n == SOCKET_ERROR)
+			{
+				if (::WSAGetLastError() != WSAEWOULDBLOCK)
+				{
+					cout << "[TCP][Receive Error] " << WSAGetLastError() << endl;
+					break;
+				}
+				else
+					continue;
+			}
+			else if (n == 0)
 			{
 				cout << "[TCP]Close Requested" << endl;
-				clientSockets.erase(iter);
+				clientSockets.erase(iter->first);
 				connectedClientCount--;
-				cout << "[Disconnect] Connected Clients: " << connectedClientCount << endl;
+				cout << "[TCP][Disconnect] Connected Clients: " << connectedClientCount << endl;
 				if (connectedClientCount == 0)
 				{
 					std::string closeMsg = messageData->GetMessageContent(Message::Close);
@@ -136,7 +144,7 @@ void MessageThreadTCP()
 				buf[n] = 0;
 			else
 			{
-				cout << "Too long message" << endl;
+				cout << "[TCP]Too long message" << endl;
 				continue;
 			}
 
@@ -170,15 +178,15 @@ void MessageThreadTCP()
 			}
 
 			int bufSize;
-			const char* assembledJson = GetJsonString(newDocument, bufSize).c_str();
-			send(client, assembledJson, bufSize, 0);
+			std::string assembledJson = GetJsonString(newDocument, bufSize).c_str();
+			send(client, assembledJson.c_str(), bufSize, 0);
 			//cout << "[buf] " << buf << endl;
 		}
 
 		if (connectedClientCount == 0)
 			break;
 
-		cout << "Message Checked" << endl;
+		cout << "[TCP]Message Checked" << endl;
 		Sleep(100);
 	}
 

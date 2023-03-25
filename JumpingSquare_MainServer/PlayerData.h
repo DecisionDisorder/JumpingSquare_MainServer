@@ -8,6 +8,7 @@
 class PlayerData
 {
 private:
+	long long timestamp;
 	std::string name;
 	Vector3 position;
 	Vector3 rotation;
@@ -21,6 +22,9 @@ public:
 	inline Vector3 GetRotation() { return rotation; }
 	inline Vector3 GetPosition() { return position; }
 	inline bool IsAlive() { return alive; }
+	inline void SetAlive(bool alive) { this->alive = alive; }
+
+	void ApplyData(PlayerData player);
 
 	Vector3 Respawn();
 

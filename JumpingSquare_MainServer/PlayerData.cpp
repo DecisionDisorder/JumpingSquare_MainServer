@@ -5,6 +5,7 @@
 
 PlayerData::PlayerData(rapidjson::Document& document)
 {
+	timestamp = document["timestamp"].GetInt64();
 	name = std::string(document["playerName"].GetString());
 	position = Vector3(document["positionX"].GetDouble(), document["positionY"].GetDouble(), document["positionZ"].GetDouble());
 	rotation = Vector3(document["rotationX"].GetDouble(), document["rotationY"].GetDouble(), document["rotationZ"].GetDouble());
@@ -21,6 +22,13 @@ void PlayerData::SetPosition(Vector3 position)
 void PlayerData::SetRotation(Vector3 rot)
 {
 	this->rotation = rot;
+}
+
+void PlayerData::ApplyData(PlayerData player)
+{
+	position = player.position;
+	rotation = player.rotation;
+	timestamp = player.timestamp;
 }
 
 Vector3 PlayerData::Respawn()
