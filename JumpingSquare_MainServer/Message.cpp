@@ -3,6 +3,7 @@
 
 Message::Message(rapidjson::Document& document)
 {
+	// 메시지에 대한 Json Value에서 값을 불러와서 초기화
 	access = ResponsiveMessage(document["access"]["request"].GetString(), document["access"]["accept"].GetString());
 	respawn = ResponsiveMessage(document["respawn"]["request"].GetString(), document["respawn"]["accept"].GetString());
 	close = document["close"].GetString();
@@ -12,10 +13,12 @@ Message::Message(rapidjson::Document& document)
 
 Message* Message::ReadDataFromFile()
 {
+	// 메시지 데이터 파일을 연다
 	std::ifstream fIn("data/message.json");
 	std::string str;
 	Message* loadedMessageData = nullptr;
 
+	// 파일을 불러와서 문자열을 읽어오고, 데이터를 초기화하여 반환
 	if (fIn.is_open())
 	{
 		rapidjson::Document doc;
@@ -32,6 +35,7 @@ Message* Message::ReadDataFromFile()
 
 std::string Message::GetMessageContent(MessageType type)
 {
+	// 메시지 종류에 맞는 케이스에 따라 메시지 반환
 	switch (type)
 	{
 	case Message::AccessRequest:

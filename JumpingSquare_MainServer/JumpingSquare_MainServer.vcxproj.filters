@@ -15,13 +15,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="IOCP_MainServer.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
     <ClCompile Include="Socket_MainServer.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="jsoncpp.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="PlayerData.cpp">
@@ -65,12 +59,6 @@
     <ClInclude Include="Socket_MainServer.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="json\json.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="json\json-forwards.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
     <ClInclude Include="PlayerData.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
@@ -78,9 +66,6 @@
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="MapData.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="IOCP_MainServer.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="Message.h">

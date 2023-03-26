@@ -5,6 +5,7 @@
 
 PlayerData::PlayerData(rapidjson::Document& document)
 {
+	// Json Document로부터 값을 불러와서 멤버변수 초기화
 	timestamp = document["timestamp"].GetInt64();
 	name = std::string(document["playerName"].GetString());
 	position = Vector3(document["positionX"].GetDouble(), document["positionY"].GetDouble(), document["positionZ"].GetDouble());

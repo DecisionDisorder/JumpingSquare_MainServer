@@ -140,8 +140,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Message.cpp" />
-    <ClCompile Include="IOCP_MainServer.cpp" />
-    <ClCompile Include="jsoncpp.cpp" />
     <ClCompile Include="MapData.cpp" />
     <ClCompile Include="MutexLock.cpp" />
     <ClCompile Include="MutexLock.h" />
@@ -156,9 +154,6 @@
     <ClCompile Include="Vector3.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="IOCP_MainServer.h" />
-    <ClInclude Include="json\json-forwards.h" />
-    <ClInclude Include="json\json.h" />
     <ClInclude Include="MapData.h" />
     <ClInclude Include="Message.h" />
     <ClInclude Include="PlayerData.h" />

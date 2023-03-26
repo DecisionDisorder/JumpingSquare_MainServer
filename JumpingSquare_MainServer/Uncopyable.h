@@ -1,5 +1,8 @@
 #pragma once
 
+/// <summary>
+/// 복사를 금지하고자 하는 클래스에 붙일 수 있는 클래스
+/// </summary>
 class Uncopyable
 {
 protected:

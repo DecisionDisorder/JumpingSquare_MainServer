@@ -30,5 +30,3 @@ using std::uniform_int_distribution;
 #include "MapData.h"
 #include "Message.h"
 #include "TCPServer.h"
-
-DWORD ThreadID[5];

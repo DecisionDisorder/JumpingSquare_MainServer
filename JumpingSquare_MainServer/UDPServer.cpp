@@ -1,24 +1,31 @@
 #include "UDPServer.h"
 
+// UDP 수신 소켓
 SOCKET udpSocket;
 
+// UDP로 보낸 내부 메시지 해시 (first: playerName, second: message)
 std::unordered_map<std::string, std::string> toUdpMessageHash;
+// 메시지 해시의 동기화를 보호하는 Mutex
 std::mutex udpMessageMutex;
 
 bool CheckClose()
 {
+	// 종료 메시지 불러오기
 	std::string closeMsg = messageData->GetMessageContent(Message::Close);
 
+	// SYSTEM에서 보낸 메시지가 있는지 확인
 	MutexLockHelper lock(&udpMessageMutex);
 	std::unordered_map<std::string, std::string>::iterator messageIter = toUdpMessageHash.find("SYSTEM");
 	if (messageIter != toUdpMessageHash.end())
 	{
-		if (!messageIter->first.compare("SYSTEM") && !messageIter->second.compare(closeMsg))
+		// 종료 메시지가 있으면 true 반환
+		if (!messageIter->second.compare(closeMsg))
 		{
 			return true;
 		}
 	}
 
+	// 해당하는 메시지가 없으면 false 반환
 	return false;
 }
 
@@ -46,59 +53,73 @@ void ApplyPlayerPositionToDatagram(rapidjson::Document& doc, PlayerData player)
 
 void DataThreadUDP()
 {
-	DWORD dwResult = 0;
-	char buf[BUF_SIZE];
+	char buf[BUF_SIZE];			// 수신 버퍼
 
-	int n = 0;
-	bool connected = true;
-	bool logDetail = false;
+	int receiveSize = 0;		// 수신받은 데이터 크기
+	bool connected = true;		// 접속 중인 클라이언트가 있는지 여부
+	bool logDetail = false;		// 자세한 로그를 표기할지 여부
 
+	// 접속 중인 플레이어 데이터 해시
 	std::unordered_map<std::string, PlayerData> playerDataHash;
+	// 클라이언트 소켓 주소 구조체
 	SOCKADDR_IN clientSocketAddr;
+	// 소켓 주소 구조체 크기
 	int clientSocketAddrSize;
 
+	// 소켓 주소 구조체 0으로 초기화
 	memset(&clientSocketAddr, 0, sizeof(clientSocketAddr));
 
 	while (connected)
 	{
+		// 연산 시작 시간 얻어오기
 		long long processStart = GetCurrentTimeInMilliSeconds();
 		cout << endl;
 
+		// 종료 여부 확인
 		if (CheckClose())
 			break;
 
-		std::vector<SOCKADDR_IN> clientSockets;
-		clientSocketAddrSize = sizeof(clientSocketAddr);
+		std::vector<SOCKADDR_IN> clientSockets;			 // 이번 회차에 수신받은 클라이언트 소켓 주소 리스트
+		clientSocketAddrSize = sizeof(clientSocketAddr); // 소켓 주소 크기
 
-		rapidjson::Document arrDoc;
-		rapidjson::Value arrayVal;
-		rapidjson::Document newDocument;
-		rapidjson::Document::AllocatorType& allocator = arrDoc.GetAllocator();
+		rapidjson::Document arrDoc;						 // 송신할 Json Document
+		rapidjson::Value arrayVal;						 // 송신할 Json 배열 값
+		rapidjson::Document newDocument;				 // 수신받은 Json Document
+		rapidjson::Document::AllocatorType& allocator = arrDoc.GetAllocator(); // 데이터 추가를 위한 Json Allocator
 
+		// arrayVal을 배열로 지정
 		arrayVal.SetArray();
+		// arrDoc를 오브젝트로 지정
 		arrDoc.SetObject();
 
+		// 접속 수 만큼 수신받도록 반복
 		for (int i = 0; i < connectedClientCount;)
 		{
-			n = recvfrom(udpSocket, buf, BUF_SIZE, 0, (struct sockaddr*)&clientSocketAddr, &clientSocketAddrSize);
+			// UDP로 데이터 수신
+			receiveSize = recvfrom(udpSocket, buf, BUF_SIZE, 0, (struct sockaddr*)&clientSocketAddr, &clientSocketAddrSize);
+			// 송신한 클라이언트가 이미 리스트에 있는지 확인
 			if (!CheckDuplicateClient(clientSockets, clientSocketAddr))
 			{
+				// 중복되지 않았으면 추가 후 i++
 				clientSockets.push_back(clientSocketAddr);
 				i++;
 			}
 			else
 				cout << "Duplicated socket" << endl;
 			
-			if (n < 0)
+			// 수신 오류 확인
+			if (receiveSize < 0)
 			{
 				cout << "[UDP]recvfrom() error! " << WSAGetLastError() << endl;
 				return;
 			}
-			else if (n < BUF_SIZE)
+			// 메시지 마감 처리
+			else if (receiveSize < BUF_SIZE)
 			{
-				buf[n] = 0;
+				buf[receiveSize] = 0;
 				cout << "[UDP]received from " << clientSocketAddr.sin_port << endl;
 			}
+			// 메시지 길이 초과
 			else
 			{
 				cout << "[UDP]Too long message" << endl;
@@ -108,8 +129,10 @@ void DataThreadUDP()
 			// 받은 buf를 Json Array에  추가
 			newDocument.Parse(buf);
 
+			// 플레이어 데이터 인스턴스 생성
 			PlayerData playerFromClient(newDocument);
 
+			// 해당하는 플레이어 데이터 해시에서 찾기
 			std::unordered_map<std::string, PlayerData>::iterator findIter = playerDataHash.find(playerFromClient.GetPlayerName());
 
 			// 플레이어 데이터가 해시에 없을 때
@@ -119,21 +142,25 @@ void DataThreadUDP()
 				playerDataHash.insert(
 					std::unordered_map<std::string, PlayerData>::value_type(playerFromClient.GetPlayerName(), playerFromClient));
 			}
-			// 클라이언트에서 온 플레이어 데이터 적용
 			else
 			{
+				// 플레이어 데이터 해시 찾기
 				std::unordered_map <std::string, std::string>::iterator waitingIter = toUdpMessageHash.find(playerFromClient.GetPlayerName());
-				// 대기 중인 데이터가 있을 때
+				// (TCP 스레드에서 보낸)대기 중인 UDP 데이터가 있을 때
 				if (waitingIter != toUdpMessageHash.end())
 				{
-					// 대기 중인 플레이어 데이터 적용 (mutex lock)
+					// 대기 중인 데이터 적용 (mutex lock)
 					MutexLockHelper lock(&udpMessageMutex);
 					std::string waitingMessage = waitingIter->second;
+					// 메시지가 리스폰 요청이면
 					if (!waitingMessage.compare(messageData->GetMessageContent(Message::RespawnRequest)))
 					{
+						// 생존 상태로 바꾸고 위치를 리스폰 위치로 지정
 						playerFromClient.SetAlive(true);
 						playerFromClient.SetPosition(playerFromClient.GetRespawnPosition());
+						// 위치 강제 적 용
 						newDocument["forceTransform"].SetBool(true);
+						// 처리한 메시지 삭제
 						toUdpMessageHash.erase(playerFromClient.GetPlayerName());
 					}
 					
@@ -141,6 +168,7 @@ void DataThreadUDP()
 				}
 			}
 
+			// 사망 조건 확인
 			if (playerFromClient.GetPosition().y < mapData->GetLimitY() && playerFromClient.IsAlive())
 			{
 				// TCP 메시지 큐에 사망 메시지 등록
@@ -151,9 +179,11 @@ void DataThreadUDP()
 				// 블록을 벗어나면 mutex가 unlock된다.
 			}
 
+			// 맵 정보 확인
 			int map = newDocument["map"].GetInt();
 			Vector3 clearPosition = mapData->GetMap(map).GetClearPosition();
 			Vector3 clearBoundary = mapData->GetMap(map).GetClearBoundary();
+			// 클리어 기준 확인
 			if (CheckBoundary3D(playerFromClient.GetPosition(), clearPosition, clearBoundary))
 			{
 				// TCP 메시지 큐에 클리어 메시지 등록
@@ -166,33 +196,31 @@ void DataThreadUDP()
 			// 최신 데이터로 플레이어 업데이트
 			if(findIter != playerDataHash.end())
 				findIter->second.ApplyData(playerFromClient);
+			// 메시지에 갱신된 데이터 적 용
 			ApplyPlayerPositionToDatagram(newDocument, playerFromClient);
+			// 송신할 배열 데이터에 추가
 			arrayVal.PushBack(newDocument, allocator);
-			//cout << "[buf] " << buf << endl;
 		}
 		if (arrayVal.Size() == 0)
 			continue;
 
+		// 배열 값을 최상위 오브젝트에 추가
 		arrDoc.AddMember("Items", arrayVal, allocator);
 		cout << "[UDP]Position Received" << endl;
 
+		// Json Document를 Json String으로 변환
 		rapidjson::StringBuffer buffer;
 		rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
 		arrDoc.Accept(writer);
-
 		std::string msg = buffer.GetString();
-
 		const char* assembledJson = msg.c_str();
 
 		if(logDetail)
 			cout << "[UDP]Assembled Data: " << assembledJson << endl;
 
-		//clientSockets.erase(std::unique(clientSockets.begin(), clientSockets.end()), clientSockets.end());
-
 		for (int i = 0; i < clientSockets.size(); i++)
 			cout << "[UDP]collected socket: " << clientSockets[i].sin_addr.S_un.S_addr << ":" << clientSockets[i].sin_port << endl;
 
-		// TODO : 데이터 수신한 소켓을 보관해둬야 함
 		// 모은 Json Array를 모든 client에 Broadcast
 		for (int i = 0; i < clientSockets.size(); i++)
 		{
@@ -209,6 +237,7 @@ void DataThreadUDP()
 		}
 		cout << "[UDP]Position Broadcasted" << endl;
 
+		// 사이클 당 처리 시간 계산
 		long long processEnd = GetCurrentTimeInMilliSeconds();
 		cout << "[UDP]Process Time 1 cycle: " << (processEnd - processStart) << "ms" << endl;
 	}
