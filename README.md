@@ -2,7 +2,7 @@
 게임 서버-클라이언트 구조를 공부/구현하기 위해 개발한 멀티플레이 점프맵 게임의 서버 프로젝트입니다.
 
 [Game Server Project]
-[GitHub: JumpingSquare Client](https://github.com/DecisionDisorder/JumpingSquare"[GitHub: JumpingSquare Client]")  
+[GitHub: JumpingSquare Client](https://github.com/DecisionDisorder/JumpingSquare "[GitHub: JumpingSquare Client]")  
 
 [Developer]
 - 김현종 (guswhd990507@naver.com)
