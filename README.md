@@ -1,4 +1,4 @@
-# JumpingSquare_MainServer
+# JumpingSquare MainServer
 게임 서버-클라이언트 구조를 공부/구현하기 위해 개발한 멀티플레이 점프맵 게임의 서버 프로젝트입니다.
 
 [Game Server Project]
