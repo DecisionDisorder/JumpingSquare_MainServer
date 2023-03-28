@@ -21,7 +21,7 @@
 
 ## 기술 관련 소개
 ###  [개발환경 및 기술 스택]
-- C++ (Visual C++ 2022)
+- Visual Studio 2022 & C++ (Visual C++ 2022)
 - Windows Socket API
 - Rapidjson
 - Thread & Mutex
