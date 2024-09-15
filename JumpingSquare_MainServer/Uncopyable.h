@@ -1,14 +1,17 @@
 #pragma once
 
-/// <summary>
-/// 복사를 금지하고자 하는 클래스에 붙일 수 있는 클래스
-/// </summary>
-class Uncopyable
+namespace dedi
 {
-protected:
-	Uncopyable();
-	~Uncopyable();
-private:
-	Uncopyable(const Uncopyable&);
-	Uncopyable& operator=(const Uncopyable&);
-};
+	/// <summary>
+	/// 복사를 금지하고자 하는 클래스에 붙일 수 있는 클래스
+	/// </summary>
+	class Uncopyable
+	{
+	protected:
+		Uncopyable();
+		~Uncopyable();
+	private:
+		Uncopyable(const Uncopyable&);
+		Uncopyable& operator=(const Uncopyable&);
+	};
+}

@@ -2,17 +2,25 @@
 #include <mutex>
 #include "Uncopyable.h"
 
-/// <summary>
-/// Mutex Lock/Unlock을 블록 단위로 자동으로 해주는 클래스
-/// </summary>
-class MutexLockHelper : private Uncopyable
+namespace dedi
 {
-public:
-	explicit MutexLockHelper(std::mutex* pm);
+	class Uncopyable;
+}
 
-	~MutexLockHelper();
+namespace dedi
+{
+	/// <summary>
+	/// Mutex Lock/Unlock을 블록 단위로 자동으로 해주는 클래스
+	/// </summary>
+	class MutexLockHelper : private Uncopyable
+	{
+	public:
+		explicit MutexLockHelper(std::mutex* pm);
 
-private:
-	// 잠금 해제 대상 Mutex 포인터
-	std::mutex* mutexPtr;
-};
+		~MutexLockHelper();
+
+	private:
+		// 잠금 해제 대상 Mutex 포인터
+		std::mutex* mutexPtr;
+	};
+}

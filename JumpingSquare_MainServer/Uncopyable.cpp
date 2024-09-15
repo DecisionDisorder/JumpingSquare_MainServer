@@ -1,9 +1,12 @@
 #include "Uncopyable.h"
 
-Uncopyable::Uncopyable()
+namespace dedi
 {
-}
+	Uncopyable::Uncopyable()
+	{
+	}
 
-Uncopyable::~Uncopyable()
-{
+	Uncopyable::~Uncopyable()
+	{
+	}
 }
