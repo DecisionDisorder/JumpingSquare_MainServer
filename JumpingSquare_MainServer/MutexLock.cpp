@@ -1,5 +1,4 @@
 #include "MutexLock.h"
-#include "Uncopyable.h"
 
 namespace dedi
 {

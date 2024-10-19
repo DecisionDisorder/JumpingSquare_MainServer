@@ -21,12 +21,3 @@ using std::uniform_int_distribution;
 #include <stdexcept>
 
 #pragma comment(lib, "ws2_32.lib")
-
-#include "MutexLock.h"
-#include "ServerSettings.h"
-#include "Vector3.h"
-#include "PlayerData.h"
-#include "Tools.h"
-#include "MapData.h"
-#include "Message.h"
-#include "TCPServer.h"

@@ -14,10 +14,12 @@ using std::endl;
 #include <queue>
 #include <mutex>
 
-#include "MutexLock.h"
-#include "ServerSettings.h"
-#include "PlayerData.h"
-#include "TCPServer.h"
+#include "rapidjson/document.h"
+
+namespace dedi
+{
+	class PlayerData;
+}
 
 namespace dedi
 {
@@ -31,7 +33,7 @@ namespace dedi
 	/// <summary>
 	/// UDP 서버를 종료해야하는지 확인하는 함수
 	/// </summary>
-	bool CheckClose();
+	bool checkClose();
 
 	/// <summary>
 	/// 클라이언트 소켓 리스트에 중복된 소켓이 있는지 확인
@@ -39,17 +41,17 @@ namespace dedi
 	/// <param name="clientSockets">접속 중인 클라이언트 리스트</param>
 	/// <param name="newClient">추가할 클라이언트</param>
 	/// <returns>중복 여부</returns>
-	bool CheckDuplicateClient(std::vector<SOCKADDR_IN>& clientSockets, SOCKADDR_IN newClient);
+	bool checkDuplicateClient(std::vector<SOCKADDR_IN>& clientSockets, SOCKADDR_IN newClient);
 
 	/// <summary>
 	/// 플레이어 데이터 변경사항을 Json Document에 반영
 	/// </summary>
 	/// <param name="doc">반영될 Document</param>
 	/// <param name="player">반영할 데이터</param>
-	void ApplyPlayerPositionToDatagram(rapidjson::Document& doc, PlayerData player);
+	void applyPlayerPositionToDatagram(rapidjson::Document& doc, const PlayerData& player);
 
 	/// <summary>
 	/// UDP 데이터를 송수신하는 스레드
 	/// </summary>
-	void DataThreadUDP();
+	void dataThreadUDP();
 }

@@ -142,10 +142,8 @@
     <ClCompile Include="Message.cpp" />
     <ClCompile Include="MapData.cpp" />
     <ClCompile Include="MutexLock.cpp" />
-    <ClCompile Include="MutexLock.h" />
     <ClCompile Include="PlayerData.cpp" />
     <ClCompile Include="ServerSettings.cpp" />
-    <ClCompile Include="ServerSettings.h" />
     <ClCompile Include="Socket_MainServer.cpp" />
     <ClCompile Include="TCPServer.cpp" />
     <ClCompile Include="Tools.cpp" />
@@ -156,7 +154,9 @@
   <ItemGroup>
     <ClInclude Include="MapData.h" />
     <ClInclude Include="Message.h" />
+    <ClInclude Include="MutexLock.h" />
     <ClInclude Include="PlayerData.h" />
+    <ClInclude Include="ServerSettings.h" />
     <ClInclude Include="Socket_MainServer.h" />
     <ClInclude Include="TCPServer.h" />
     <ClInclude Include="Tools.h" />

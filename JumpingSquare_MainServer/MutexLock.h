@@ -4,11 +4,6 @@
 
 namespace dedi
 {
-	class Uncopyable;
-}
-
-namespace dedi
-{
 	/// <summary>
 	/// Mutex Lock/Unlock을 블록 단위로 자동으로 해주는 클래스
 	/// </summary>

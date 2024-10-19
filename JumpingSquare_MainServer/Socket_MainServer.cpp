@@ -1,5 +1,15 @@
 #include "Socket_MainServer.h"
+#include "MutexLock.h"
+#include "ServerSettings.h"
+#include "Vector3.h"
+#include "PlayerData.h"
+#include "Tools.h"
+#include "MapData.h"
+#include "Message.h"
+#include "TCPServer.h"
+#include "UDPServer.h"
 
+using namespace dedi;
 
 int main()
 {
@@ -82,8 +92,8 @@ int main()
 	}
 
 	// Map 및 Message 데이터 파일 읽기
-	mapData = MapData::ReadMapDataFromFile();
-	messageData = Message::ReadDataFromFile();
+	mapData = MapData::readMapDataFromFile();
+	messageData = Message::readDataFromFile();
 
 	// TCP Listen  시작
 	listen(tcpListenSocket, 5);
@@ -122,7 +132,7 @@ int main()
 		{
 			clientSocketQueue.push(clientSocket);
 			if(tcpThread == nullptr)
-				tcpThread = new std::thread(MessageThreadTCP);
+				tcpThread = new std::thread(messageThreadTCP);
 		}
 		else
 		{

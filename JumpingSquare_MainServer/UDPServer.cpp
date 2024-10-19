@@ -1,6 +1,13 @@
 #include "UDPServer.h"
+#include "PlayerData.h"
+#include "MutexLock.h"
+#include "ServerSettings.h"
+#include "TCPServer.h"
+#include "MapData.h"
+#include "Tools.h"
+#include "Message.h"
 
-namespace dede
+namespace dedi
 {
 	// UDP 수신 소켓
 	SOCKET udpSocket;
@@ -10,7 +17,7 @@ namespace dede
 	// 메시지 해시의 동기화를 보호하는 Mutex
 	std::mutex udpMessageMutex;
 
-	bool CheckClose()
+	bool checkClose()
 	{
 		// 종료 메시지 불러오기
 		std::string closeMsg = messageData->GetMessageContent(Message::Close);
@@ -31,7 +38,7 @@ namespace dede
 		return false;
 	}
 
-	bool CheckDuplicateClient(std::vector<SOCKADDR_IN>& clientSockets, SOCKADDR_IN newClient)
+	bool checkDuplicateClient(std::vector<SOCKADDR_IN>& clientSockets, SOCKADDR_IN newClient)
 	{
 		for (int i = 0; i < clientSockets.size(); i++)
 		{
@@ -45,15 +52,15 @@ namespace dede
 		return false;
 	}
 
-	void ApplyPlayerPositionToDatagram(rapidjson::Document& doc, PlayerData player)
+	void applyPlayerPositionToDatagram(rapidjson::Document& doc, const PlayerData& player)
 	{
-		doc["positionX"].SetDouble(player.GetPosition().x);
-		doc["positionY"].SetDouble(player.GetPosition().y);
-		doc["positionZ"].SetDouble(player.GetPosition().z);
-		doc["alive"].SetBool(player.IsAlive());
+		doc["positionX"].SetDouble(player.getPosition().x);
+		doc["positionY"].SetDouble(player.getPosition().y);
+		doc["positionZ"].SetDouble(player.getPosition().z);
+		doc["alive"].SetBool(player.isAlive());
 	}
 
-	void DataThreadUDP()
+	void dataThreadUDP()
 	{
 		char buf[BUF_SIZE];			// 수신 버퍼
 
@@ -74,11 +81,11 @@ namespace dede
 		while (connected)
 		{
 			// 연산 시작 시간 얻어오기
-			long long processStart = GetCurrentTimeInMilliSeconds();
+			long long processStart = getCurrentTimeInMilliSeconds();
 			cout << endl;
 
 			// 종료 여부 확인
-			if (CheckClose())
+			if (checkClose())
 				break;
 
 			std::vector<SOCKADDR_IN> clientSockets;			 // 이번 회차에 수신받은 클라이언트 소켓 주소 리스트
@@ -100,7 +107,7 @@ namespace dede
 				// UDP로 데이터 수신
 				receiveSize = recvfrom(udpSocket, buf, BUF_SIZE, 0, (struct sockaddr*)&clientSocketAddr, &clientSocketAddrSize);
 				// 송신한 클라이언트가 이미 리스트에 있는지 확인
-				if (!CheckDuplicateClient(clientSockets, clientSocketAddr))
+				if (!checkDuplicateClient(clientSockets, clientSocketAddr))
 				{
 					// 중복되지 않았으면 추가 후 i++
 					clientSockets.push_back(clientSocketAddr);
@@ -135,19 +142,19 @@ namespace dede
 				PlayerData playerFromClient(newDocument);
 
 				// 해당하는 플레이어 데이터 해시에서 찾기
-				std::unordered_map<std::string, PlayerData>::iterator findIter = playerDataHash.find(playerFromClient.GetPlayerName());
+				std::unordered_map<std::string, PlayerData>::iterator findIter = playerDataHash.find(playerFromClient.getPlayerName());
 
 				// 플레이어 데이터가 해시에 없을 때
 				if (findIter == playerDataHash.end())
 				{
 					// 새로운 플레이어 추가	
 					playerDataHash.insert(
-						std::unordered_map<std::string, PlayerData>::value_type(playerFromClient.GetPlayerName(), playerFromClient));
+						std::unordered_map<std::string, PlayerData>::value_type(playerFromClient.getPlayerName(), playerFromClient));
 				}
 				else
 				{
 					// 플레이어 데이터 해시 찾기
-					std::unordered_map <std::string, std::string>::iterator waitingIter = toUdpMessageHash.find(playerFromClient.GetPlayerName());
+					std::unordered_map <std::string, std::string>::iterator waitingIter = toUdpMessageHash.find(playerFromClient.getPlayerName());
 					// (TCP 스레드에서 보낸)대기 중인 UDP 데이터가 있을 때
 					if (waitingIter != toUdpMessageHash.end())
 					{
@@ -158,12 +165,12 @@ namespace dede
 						if (!waitingMessage.compare(messageData->GetMessageContent(Message::RespawnRequest)))
 						{
 							// 생존 상태로 바꾸고 위치를 리스폰 위치로 지정
-							playerFromClient.SetAlive(true);
-							playerFromClient.SetPosition(playerFromClient.GetRespawnPosition());
+							playerFromClient.setAlive(true);
+							playerFromClient.setPosition(playerFromClient.getRespawnPosition());
 							// 위치 강제 적 용
 							newDocument["forceTransform"].SetBool(true);
 							// 처리한 메시지 삭제
-							toUdpMessageHash.erase(playerFromClient.GetPlayerName());
+							toUdpMessageHash.erase(playerFromClient.getPlayerName());
 						}
 					
 						// 블록을 벗어나면 mutex가 unlock된다.
@@ -171,35 +178,35 @@ namespace dede
 				}
 
 				// 사망 조건 확인
-				if (playerFromClient.GetPosition().y < mapData->GetLimitY() && playerFromClient.IsAlive())
+				if (playerFromClient.getPosition().y < mapData->getLimitY() && playerFromClient.isAlive())
 				{
 					// TCP 메시지 큐에 사망 메시지 등록
 					MutexLockHelper lock(&tcpMessageMutex);
-					playerFromClient.SetAlive(false);
-					toTcpMessageQueue.push({ playerFromClient.GetPlayerName(), messageData->GetMessageContent(Message::Death) });
-					cout << "[UDP] \"" << playerFromClient.GetPlayerName() << "\" Player Death Message Queued." << endl;
+					playerFromClient.setAlive(false);
+					toTcpMessageQueue.push({ playerFromClient.getPlayerName(), messageData->GetMessageContent(Message::Death) });
+					cout << "[UDP] \"" << playerFromClient.getPlayerName() << "\" Player Death Message Queued." << endl;
 					// 블록을 벗어나면 mutex가 unlock된다.
 				}
 
 				// 맵 정보 확인
 				int map = newDocument["map"].GetInt();
-				Vector3 clearPosition = mapData->GetMap(map).GetClearPosition();
-				Vector3 clearBoundary = mapData->GetMap(map).GetClearBoundary();
+				Vector3 clearPosition = mapData->getMap(map).getClearPosition();
+				Vector3 clearBoundary = mapData->getMap(map).getClearBoundary();
 				// 클리어 기준 확인
-				if (CheckBoundary3D(playerFromClient.GetPosition(), clearPosition, clearBoundary))
+				if (checkBoundary3D(playerFromClient.getPosition(), clearPosition, clearBoundary))
 				{
 					// TCP 메시지 큐에 클리어 메시지 등록
 					MutexLockHelper lock(&tcpMessageMutex);
-					toTcpMessageQueue.push({ playerFromClient.GetPlayerName(), messageData->GetMessageContent(Message::Clear) });
-					cout << "[UDP] \"" << playerFromClient.GetPlayerName() << "\" Player Clear Message Queued." << endl;
+					toTcpMessageQueue.push({ playerFromClient.getPlayerName(), messageData->GetMessageContent(Message::Clear) });
+					cout << "[UDP] \"" << playerFromClient.getPlayerName() << "\" Player Clear Message Queued." << endl;
 					// 블록을 벗어나면 mutex가 unlock된다.
 				}
 
 				// 최신 데이터로 플레이어 업데이트
 				if(findIter != playerDataHash.end())
-					findIter->second.ApplyData(playerFromClient);
-				// 메시지에 갱신된 데이터 적 용
-				ApplyPlayerPositionToDatagram(newDocument, playerFromClient);
+					findIter->second.applyData(playerFromClient);
+				// 메시지에 갱신된 데이터 적용
+				applyPlayerPositionToDatagram(newDocument, playerFromClient);
 				// 송신할 배열 데이터에 추가
 				arrayVal.PushBack(newDocument, allocator);
 			}
@@ -227,7 +234,7 @@ namespace dede
 			for (int i = 0; i < clientSockets.size(); i++)
 			{
 				struct sockaddr* clientaddr = (struct sockaddr*)&clientSockets[i];
-				int sendSize = sendto(udpSocket, assembledJson, msg.size(), 0, clientaddr, sizeof(*clientaddr));
+				int sendSize = sendto(udpSocket, assembledJson, static_cast<unsigned int>(msg.size()), 0, clientaddr, sizeof(*clientaddr));
 				if (sendSize != msg.size())
 				{
 					cout << "[UDP] sendto error occured!" << endl;
@@ -240,7 +247,7 @@ namespace dede
 			cout << "[UDP]Position Broadcasted" << endl;
 
 			// 사이클 당 처리 시간 계산
-			long long processEnd = GetCurrentTimeInMilliSeconds();
+			long long processEnd = getCurrentTimeInMilliSeconds();
 			cout << "[UDP]Process Time 1 cycle: " << (processEnd - processStart) << "ms" << endl;
 		}
 

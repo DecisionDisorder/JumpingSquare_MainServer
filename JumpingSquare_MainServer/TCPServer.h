@@ -24,39 +24,34 @@ using std::endl;
 #include "rapidjson/writer.h"
 #include "rapidjson/stringbuffer.h"
 
-#include "MutexLock.h"
-#include "ServerSettings.h"
-#include "PlayerData.h"
-#include "Tools.h"
-#include "Message.h"
-#include "UDPServer.h"
+namespace dedi
+{
+	// 접속 대기중인 클라이언트 소켓 큐
+	extern std::queue<SOCKET> clientSocketQueue;
+	// 클라이언트 소켓 큐의 동기화를 보호하는 Mutex
+	extern std::mutex socketMutex;
 
-// 접속 대기중인 클라이언트 소켓 큐
-extern std::queue<SOCKET> clientSocketQueue;
-// 클라이언트 소켓 큐의 동기화를 보호하는 Mutex
-extern std::mutex socketMutex;
+	// TCP로 보낸 내부 메시지 큐 (first: playerName, second: message)
+	extern std::queue<std::pair<std::string, std::string>> toTcpMessageQueue;
+	// 메시지 큐의 동기화를 보호하는 Mutex
+	extern std::mutex tcpMessageMutex;
 
-// TCP로 보낸 내부 메시지 큐 (first: playerName, second: message)
-extern std::queue<std::pair<std::string, std::string>> toTcpMessageQueue;
-// 메시지 큐의 동기화를 보호하는 Mutex
-extern std::mutex tcpMessageMutex;
-
-/// <summary>
-/// 클라이언트로 보낼 TCP 메시지 생성
-/// </summary>
-/// <param name="playerName">플레이어 이름</param>
-/// <param name="message">메시지 내용</param>
-/// <param name="bufSize">버퍼 크기</param>
-/// <returns>생성된 메시지 문자열</returns>
-std::string CreateTcpMessage(std::string playerName, std::string message, int& bufSize);
-/// <summary>
-/// TCP 전용 메시지 송수신 처리 스레드
-/// </summary>
-void MessageThreadTCP();
-/// <summary>
-/// 접속 완료 처리 함수
-/// </summary>
-/// <param name="client">접속 대상 클라이언트 소켓</param>
-/// <param name="clientSockets">접속한 클라이언트 해시</param>
-void AccessComplete(SOCKET& client, std::unordered_map<std::string, SOCKET>& clientSockets);
-
+	/// <summary>
+	/// 클라이언트로 보낼 TCP 메시지 생성
+	/// </summary>
+	/// <param name="playerName">플레이어 이름</param>
+	/// <param name="message">메시지 내용</param>
+	/// <param name="bufSize">버퍼 크기</param>
+	/// <returns>생성된 메시지 문자열</returns>
+	std::string createTcpMessage(std::string playerName, std::string message, int& bufSize);
+	/// <summary>
+	/// 접속 완료 처리 함수
+	/// </summary>
+	/// <param name="client">접속 대상 클라이언트 소켓</param>
+	/// <param name="clientSockets">접속한 클라이언트 해시</param>
+	void accessComplete(SOCKET& client, std::unordered_map<std::string, SOCKET>& clientSockets);
+	/// <summary>
+	/// TCP 전용 메시지 송수신 처리 스레드
+	/// </summary>
+	void messageThreadTCP();
+}

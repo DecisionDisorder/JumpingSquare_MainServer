@@ -1,5 +1,4 @@
 #include "PlayerData.h"
-#include "rapidjson/document.h"
 #include "rapidjson/writer.h"
 #include "rapidjson/stringbuffer.h"
 
@@ -8,40 +7,40 @@ namespace dedi
 	PlayerData::PlayerData(rapidjson::Document& document)
 	{
 		// Json Document로부터 값을 불러와서 멤버변수 초기화
-		timestamp = document["timestamp"].GetInt64();
-		name = std::string(document["playerName"].GetString());
-		position = Vector3(document["positionX"].GetDouble(), document["positionY"].GetDouble(), document["positionZ"].GetDouble());
-		rotation = Vector3(document["rotationX"].GetDouble(), document["rotationY"].GetDouble(), document["rotationZ"].GetDouble());
-		alive = document["alive"].GetBool();
-		respawnPosition = Vector3(0.f, 1.0f, 0.f);
+		_timestamp = document["timestamp"].GetInt64();
+		_name = std::string(document["playerName"].GetString());
+		_position = Vector3(document["positionX"].GetDouble(), document["positionY"].GetDouble(), document["positionZ"].GetDouble());
+		_rotation = Vector3(document["rotationX"].GetDouble(), document["rotationY"].GetDouble(), document["rotationZ"].GetDouble());
+		_alive = document["alive"].GetBool();
+		_respawnPosition = Vector3(0.f, 1.0f, 0.f);
 
 	}
 
-	void PlayerData::SetPosition(Vector3 position)
+	void PlayerData::setPosition(const Vector3& position)
 	{
-		this->position = position;
+		_position = position;
 	}
 
-	void PlayerData::SetRotation(Vector3 rot)
+	void PlayerData::setRotation(const Vector3& rot)
 	{
-		this->rotation = rot;
+		_rotation = rot;
 	}
 
-	void PlayerData::ApplyData(PlayerData player)
+	void PlayerData::applyData(const PlayerData& player)
 	{
-		position = player.position;
-		rotation = player.rotation;
-		timestamp = player.timestamp;
+		_position = player._position;
+		_rotation = player._rotation;
+		_timestamp = player._timestamp;
 	}
 
-	Vector3 PlayerData::Respawn()
+	Vector3 PlayerData::respawn()
 	{
-		SetPosition(respawnPosition);
-		return respawnPosition;
+		setPosition(_respawnPosition);
+		return _respawnPosition;
 	}
 
-	void PlayerData::SetRespawnPosition(Vector3 newPosition)
+	void PlayerData::setRespawnPosition(const Vector3& newPosition)
 	{
-		respawnPosition = newPosition;
+		_respawnPosition = newPosition;
 	}
 }

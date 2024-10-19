@@ -1,5 +1,8 @@
 #include "ServerSettings.h"
 
-int connectedClientCount = 0;
-MapData* mapData;
-Message* messageData;
+namespace dedi
+{
+	int connectedClientCount = 0;
+	MapData* mapData = nullptr;
+	Message* messageData = nullptr;
+}
